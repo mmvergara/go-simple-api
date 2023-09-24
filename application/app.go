@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"github.com/mmvergara/go-simple-api/routes"
 )
 
 type App struct {
@@ -12,7 +13,7 @@ type App struct {
 
 func New() *App {
 	app := &App{
-		router: loadRoutes(),
+		router: routes.LoadRoutes(),
 	}
 
 	return app
