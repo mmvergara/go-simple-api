@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/mmvergara/go-simple-api/routes"
 	"github.com/redis/go-redis/v9"
@@ -36,17 +37,36 @@ func (a *App) Start(ctx context.Context) error {
 	
 	fmt.Println("Connecting to redis")
 	err := a.redisDb.Ping(ctx).Err()
-
 	if err != nil {
 		return fmt.Errorf("failed to connect to redis %w",err)
 	}
 
-	fmt.Println("Startin Server")
-	err = server.ListenAndServe()
+	defer func(){
+		if err := a.redisDb.Close(); err != nil{
+			fmt.Println("Failed to close redis", err)
+		}
+	}()
 
-	if err != nil{
-		return fmt.Errorf("failed to start server %w", err)
+
+	fmt.Println("Starting Server")
+	ch := make(chan error,1)
+
+	go func() {
+		err = server.ListenAndServe()
+		if err != nil{
+			ch <- fmt.Errorf("failed to start server %w", err)
+		}
+		close(ch)
+	}()
+
+	select {
+	case err = <-ch:
+		return err
+	case <- ctx.Done():
+		timeout, cancel := context.WithTimeout(context.Background(),time.Second*5)
+		defer cancel()
+		return server.Shutdown(timeout)
 	}
 
-	return nil
+
 }
