@@ -29,7 +29,7 @@ func LoadRoutes() *chi.Mux{
 		w.Write([]byte("HELLO WORD"))
 	 })
 	
-	 router.Route("/orders", loadOrderRoutes)
+	 router.Route("/post", loadPostRoutes)
 
 	 return router
 }
