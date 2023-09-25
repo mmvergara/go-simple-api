@@ -3,10 +3,12 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/mmvergara/go-simple-api/repository/post"
 )
 
 type Post struct {
-
+	Repo *post.RedisRepo
 }
 
 
