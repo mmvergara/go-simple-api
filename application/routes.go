@@ -8,35 +8,34 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/mmvergara/go-simple-api/handlers"
 	"github.com/mmvergara/go-simple-api/repository/post"
-) 
-
+)
 
 func (a *App) loadRoutes() {
-	 router := chi.NewRouter()
-	
-	 router.Use(middleware.Logger)
-	 router.Use(cors.Handler(cors.Options{
-    // AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-    AllowedOrigins:   []string{"https://*", "http://*"},
-    // AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
-    AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-    AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-    ExposedHeaders:   []string{"Link"},
-    AllowCredentials: true,
-    MaxAge:           300, // Maximum value not ignored by any of major browsers
-  }))
+	router := chi.NewRouter()
 
-	 router.Get("/",func(w http.ResponseWriter, r *http.Request){
+	router.Use(middleware.Logger)
+	router.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+
+	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("HELLO WORD"))
-	 })
-	
-	 router.Route("/post", a.loadPostRoutes)
-	 a.router = router
+	})
+
+	router.Route("/order", a.loadOrderRoutes)
+
+	a.router = router
 }
 
-
-func (a *App) loadPostRoutes(router chi.Router) {
+func (a *App) loadOrderRoutes(router chi.Router) {
 	postHandler := &handlers.Post{
 		Repo: &post.RedisRepo{
 			Client: a.redisDb,
@@ -49,16 +48,3 @@ func (a *App) loadPostRoutes(router chi.Router) {
 	router.Put("/{id}", postHandler.UpdateByID)
 	router.Delete("/{id}", postHandler.DeleteByID)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
