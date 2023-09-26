@@ -1,5 +1,9 @@
-# Simple GO Application
+# Simple GO API with redis
 
 
-# Add cors
-# Add authentication
+Environment variables
+```ts
+REDIS_DB_URL=
+REDIS_USERNAME=
+REDIS_PASSWORD=
+```

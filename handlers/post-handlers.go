@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/mmvergara/go-simple-api/model"
 	"github.com/mmvergara/go-simple-api/repository/post"
@@ -24,12 +27,12 @@ func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		fmt.Println("Error decoding body", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	now := time.Now().UTC()
-
 	post := model.Post{
 		PostID:  uuid.Must(uuid.NewRandom()),
 		AuthorID: body.AuthorID,
@@ -37,6 +40,7 @@ func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 		PostDescription: body.PostDescription,
 		CreatedAt: &now,
 	}
+	fmt.Printf("Post: %+v\n", post)
 
 	if err := p.Repo.Insert(r.Context(), post); err != nil {
 		fmt.Println("Error inserting post", err)
@@ -57,10 +61,77 @@ func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Post) List(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("List all orders")
+	cursor := r.URL.Query().Get("cursor")
+	if cursor == "" {
+		cursor = "0"
+	}
+
+	const decimal = 10
+	const bitSize = 64
+
+	cursorInt, err := strconv.ParseUint(cursor, decimal, bitSize)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	const size = 1
+
+	res, err := p.Repo.FindAll(r.Context(), post.FindAllPage{
+		Size: size,
+		Offset: cursorInt,
+	})
+
+	if err != nil {
+		fmt.Println("Error getting posts", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var response struct {
+		Posts []model.Post `json:"posts"`
+		NextCursor uint64 `json:"next_cursor,omitempty"`
+	}
+
+	response.Posts = res.Posts
+	response.NextCursor = res.Cursor
+
+	resJSON, err := json.Marshal(response)
+	if err != nil {
+		fmt.Println("Error marshalling posts", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(resJSON)
 }
 
 func (p *Post) GetByID(w http.ResponseWriter, r *http.Request) {
+	postID := chi.URLParam(r,"id")
+
+	pID,err := uuid.Parse(postID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	res, err := p.Repo.FindById(r.Context(),pID)
+	if errors.Is(err,post.ErrNotExist){
+		w.WriteHeader(http.StatusNotFound)
+		return 
+	} else if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	} 
+  
+  if err := json.NewEncoder(w).Encode(res); err != nil {
+    fmt.Println("failed to marshall", err)
+    w.WriteHeader(http.StatusInternalServerError)
+    return 
+  }
+
 
 }
 

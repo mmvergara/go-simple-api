@@ -10,12 +10,13 @@ import (
 	"github.com/mmvergara/go-simple-api/model"
 	"github.com/redis/go-redis/v9"
 )
+
 type RedisRepo struct {
 	Client *redis.Client
 }
 
 func postIDKey(id uuid.UUID) string {
-	return fmt.Sprintf("post:%d", id)
+	return fmt.Sprintf("post:%s", id)
 }
 
 func (r *RedisRepo) Insert(ctx context.Context, post model.Post) error {
@@ -26,12 +27,12 @@ func (r *RedisRepo) Insert(ctx context.Context, post model.Post) error {
 	}
 
 	key := postIDKey(post.PostID)
-	
+
 	txn := r.Client.TxPipeline()
-	
+
 	res := r.Client.SetNX(ctx, key, string(postJson), 0)
 
-	if err:= res.Err(); err != nil {
+	if err := res.Err(); err != nil {
 		txn.Discard()
 		return fmt.Errorf("failed to set post %w", err)
 	}
@@ -56,10 +57,12 @@ func (r *RedisRepo) FindById(ctx context.Context, id uuid.UUID) (model.Post, err
 	value, err := r.Client.Get(ctx, key).Result()
 
 	if err != nil {
+		fmt.Println("failed to get post")
 		return model.Post{}, fmt.Errorf("failed to get Post %w", err)
 	}
 
 	if errors.Is(err, redis.Nil) {
+		fmt.Printf("id does not exist in the database")
 		return model.Post{}, ErrNotExist
 	} else if err != nil {
 		return model.Post{}, fmt.Errorf("failed to get Post %w", err)
@@ -89,7 +92,7 @@ func (r *RedisRepo) DeleteByID(ctx context.Context, id uuid.UUID) error {
 		txn.Discard()
 		return fmt.Errorf("failed to delete post %w", err)
 	}
-	
+
 	if _, err := txn.Exec(ctx); err != nil {
 		return fmt.Errorf("failed to exec %w", err)
 	}
@@ -107,13 +110,12 @@ func (r *RedisRepo) Update(ctx context.Context, post model.Post) error {
 	// set post to redis
 	key := postIDKey(post.PostID)
 
-	
 	res := r.Client.Set(ctx, key, string(postJson), 0).Err()
 
 	// if post does not exist
-	if errors.Is(res,redis.Nil){
+	if errors.Is(res, redis.Nil) {
 		return ErrNotExist
-	// if there is an error
+		// if there is an error
 	} else if err != nil {
 		return fmt.Errorf("failed to update post %w", err)
 	}
@@ -121,12 +123,12 @@ func (r *RedisRepo) Update(ctx context.Context, post model.Post) error {
 }
 
 type FindAllPage struct {
-	Size uint64
+	Size   uint64
 	Offset uint64
 }
 
 type FindResult struct {
-	Posts []model.Post
+	Posts  []model.Post
 	Cursor uint64
 }
 
@@ -165,16 +167,12 @@ func (r *RedisRepo) FindAll(ctx context.Context, page FindAllPage) (FindResult, 
 		}
 
 		posts[i] = post
-		
+
 	}
 
 	return FindResult{
-		Posts: posts,
+		Posts:  posts,
 		Cursor: uint64(cursor),
 	}, nil
 
-	 
 }
-
-
-
