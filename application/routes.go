@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/mmvergara/go-simple-api/handlers"
+	"github.com/mmvergara/go-simple-api/repository/post"
 ) 
 
 
@@ -36,7 +37,11 @@ func (a *App) loadRoutes() {
 
 
 func (a *App) loadPostRoutes(router chi.Router) {
-	postHandler := &handlers.Post{}
+	postHandler := &handlers.Post{
+		Repo: &post.RedisRepo{
+			Client: a.redisDb,
+		},
+	}
 
 	router.Post("/", postHandler.Create)
 	router.Get("/", postHandler.List)

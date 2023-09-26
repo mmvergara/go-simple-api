@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/mmvergara/go-simple-api/model"
 	"github.com/redis/go-redis/v9"
 )
@@ -13,7 +14,7 @@ type RedisRepo struct {
 	Client *redis.Client
 }
 
-func postIDKey(id uint64) string {
+func postIDKey(id uuid.UUID) string {
 	return fmt.Sprintf("post:%d", id)
 }
 
@@ -47,9 +48,9 @@ func (r *RedisRepo) Insert(ctx context.Context, post model.Post) error {
 	return nil
 }
 
-var ErrNotExist = errors.New("Post does not exist")
+var ErrNotExist = errors.New("post does not exist")
 
-func (r *RedisRepo) FindById(ctx context.Context, id uint64) (model.Post, error) {
+func (r *RedisRepo) FindById(ctx context.Context, id uuid.UUID) (model.Post, error) {
 	key := postIDKey(id)
 
 	value, err := r.Client.Get(ctx, key).Result()
@@ -74,7 +75,7 @@ func (r *RedisRepo) FindById(ctx context.Context, id uint64) (model.Post, error)
 	return post, nil
 }
 
-func (r *RedisRepo) DeleteByID(ctx context.Context, id uint64) error {
+func (r *RedisRepo) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	key := postIDKey(id)
 
 	txn := r.Client.TxPipeline()
