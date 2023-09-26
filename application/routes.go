@@ -1,4 +1,4 @@
-package routes
+package application
 
 import (
 	"net/http"
@@ -6,10 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/mmvergara/go-simple-api/handlers"
 ) 
 
 
-func LoadRoutes() *chi.Mux{
+func (a *App) loadRoutes() {
 	 router := chi.NewRouter()
 	
 	 router.Use(middleware.Logger)
@@ -29,11 +30,20 @@ func LoadRoutes() *chi.Mux{
 		w.Write([]byte("HELLO WORD"))
 	 })
 	
-	 router.Route("/post", loadPostRoutes)
-
-	 return router
+	 router.Route("/post", a.loadPostRoutes)
+	 a.router = router
 }
 
+
+func (a *App) loadPostRoutes(router chi.Router) {
+	postHandler := &handlers.Post{}
+
+	router.Post("/", postHandler.Create)
+	router.Get("/", postHandler.List)
+	router.Get("/{id}", postHandler.GetByID)
+	router.Put("/{id}", postHandler.UpdateByID)
+	router.Delete("/{id}", postHandler.DeleteByID)
+}
 
 
 

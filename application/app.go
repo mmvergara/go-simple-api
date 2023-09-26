@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/mmvergara/go-simple-api/routes"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -18,14 +17,13 @@ type App struct {
 
 func New() *App {
 	app := &App{
-		router: routes.LoadRoutes(),
 		redisDb: redis.NewClient(&redis.Options{
 			Addr: os.Getenv("REDIS_DB_URL"),
 			Username: os.Getenv("REDIS_USERNAME"),
 			Password: os.Getenv("REDIS_PASSWORD"),
 		}),
 	}
-
+	app.loadRoutes()
 	return app
 }
 
