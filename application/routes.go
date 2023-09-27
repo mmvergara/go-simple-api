@@ -30,12 +30,12 @@ func (a *App) loadRoutes() {
 		w.Write([]byte("HELLO WORD"))
 	})
 
-	router.Route("/order", a.loadOrderRoutes)
+	router.Route("/post", a.loadPostRoutes)
 
 	a.router = router
 }
 
-func (a *App) loadOrderRoutes(router chi.Router) {
+func (a *App) loadPostRoutes(router chi.Router) {
 	postHandler := &handlers.Post{
 		Repo: &post.RedisRepo{
 			Client: a.redisDb,
@@ -45,6 +45,5 @@ func (a *App) loadOrderRoutes(router chi.Router) {
 	router.Post("/", postHandler.Create)
 	router.Get("/", postHandler.List)
 	router.Get("/{id}", postHandler.GetByID)
-	router.Put("/{id}", postHandler.UpdateByID)
 	router.Delete("/{id}", postHandler.DeleteByID)
 }

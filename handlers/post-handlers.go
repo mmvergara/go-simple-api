@@ -18,12 +18,11 @@ type Post struct {
 	Repo *post.RedisRepo
 }
 
-
 func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		AuthorID uuid.UUID `json:"author_id"`
-		PostTitle string `json:"post_title"`
-		PostDescription string `json:"post_description"`
+		AuthorID        uuid.UUID `json:"author_id"`
+		PostTitle       string    `json:"post_title"`
+		PostDescription string    `json:"post_description"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -34,11 +33,11 @@ func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now().UTC()
 	post := model.Post{
-		PostID:  uuid.Must(uuid.NewRandom()),
-		AuthorID: body.AuthorID,
-		PostTitle: body.PostTitle,
+		PostID:          uuid.Must(uuid.NewRandom()),
+		AuthorID:        body.AuthorID,
+		PostTitle:       body.PostTitle,
 		PostDescription: body.PostDescription,
-		CreatedAt: &now,
+		CreatedAt:       &now,
 	}
 	fmt.Printf("Post: %+v\n", post)
 
@@ -48,7 +47,7 @@ func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res , err := json.Marshal(post)
+	res, err := json.Marshal(post)
 	if err != nil {
 		fmt.Println("Error marshalling post", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -79,7 +78,7 @@ func (p *Post) List(w http.ResponseWriter, r *http.Request) {
 	const size = 1
 
 	res, err := p.Repo.FindAll(r.Context(), post.FindAllPage{
-		Size: size,
+		Size:   size,
 		Offset: cursorInt,
 	})
 
@@ -90,8 +89,8 @@ func (p *Post) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response struct {
-		Posts []model.Post `json:"posts"`
-		NextCursor uint64 `json:"next_cursor,omitempty"`
+		Posts      []model.Post `json:"posts"`
+		NextCursor uint64       `json:"next_cursor,omitempty"`
 	}
 
 	response.Posts = res.Posts
@@ -109,36 +108,46 @@ func (p *Post) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Post) GetByID(w http.ResponseWriter, r *http.Request) {
-	postID := chi.URLParam(r,"id")
+	postID := chi.URLParam(r, "id")
 
-	pID,err := uuid.Parse(postID)
+	pID, err := uuid.Parse(postID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	res, err := p.Repo.FindById(r.Context(),pID)
-	if errors.Is(err,post.ErrNotExist){
+	res, err := p.Repo.FindById(r.Context(), pID)
+	if errors.Is(err, post.ErrNotExist) {
 		w.WriteHeader(http.StatusNotFound)
-		return 
+		return
 	} else if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	} 
-  
-  if err := json.NewEncoder(w).Encode(res); err != nil {
-    fmt.Println("failed to marshall", err)
-    w.WriteHeader(http.StatusInternalServerError)
-    return 
-  }
+	}
 
-
-}
-
-func (p *Post) UpdateByID(w http.ResponseWriter, r *http.Request) {
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		fmt.Println("failed to marshall", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 }
 
 func (p *Post) DeleteByID(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	postID, err := uuid.Parse(idParam)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	err = p.Repo.DeleteByID(r.Context(),postID)
+	if errors.Is(err, post.ErrNotExist) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else if err != nil {
+		fmt.Println("failed to find by id:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
